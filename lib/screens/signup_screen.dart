@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
+import '../services/app_state.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -62,7 +63,67 @@ class _SignupScreenState extends State<SignupScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => context.go('/home'),
+                      onPressed: () async {
+                        final email = _emailController.text.trim();
+                        final password = _passwordController.text;
+                        final confirm = _confirmController.text;
+
+                        if (email.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.card,
+                              content: Text('Email tidak boleh kosong', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            ),
+                          );
+                          return;
+                        }
+                        if (!email.contains('@')) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.card,
+                              content: Text('Format email tidak valid', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            ),
+                          );
+                          return;
+                        }
+                        if (password.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.card,
+                              content: Text('Password minimal 6 karakter', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            ),
+                          );
+                          return;
+                        }
+                        if (password != confirm) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.card,
+                              content: Text('Konfirmasi password tidak cocok', style: GoogleFonts.inter(color: Colors.redAccent)),
+                            ),
+                          );
+                          return;
+                        }
+
+                        try {
+                          // Authenticate and save to AppState
+                          await AppState().signup(email: email, password: password);
+                          
+                          // Navigate
+                          if (context.mounted) {
+                            context.go('/home');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: AppColors.card,
+                                content: Text('Signup Gagal: $e', style: GoogleFonts.inter(color: Colors.redAccent)),
+                              ),
+                            );
+                          }
+                        }
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.white,

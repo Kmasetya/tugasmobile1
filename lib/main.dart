@@ -10,8 +10,22 @@ import 'screens/signup_screen.dart';
 import 'screens/main_screen.dart';
 import 'screens/event_detail_screen.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // UNCOMMENT THIS LATER AFTER RUNNING flutterfire configure
+
+// Concert Ticket App - Refactored to use dynamic mock API and global AppState
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // UNCOMMENT LATER AFTER RUNNING flutterfire configure
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint("Firebase init error: $e");
+  }
+  
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

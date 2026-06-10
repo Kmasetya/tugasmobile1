@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
-
-class _NotifItem {
-  final String title;
-  final String date;
-  final String artist;
-  final String imagePath;
-  _NotifItem(this.title, this.date, this.artist, this.imagePath);
-}
+import '../services/app_state.dart';
+import '../models/event.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -20,96 +15,134 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   int _tabIndex = 0;
 
-  final Map<String, List<_NotifItem>> _promoData = {
-    '15 Juli 2025': [
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Hanni (New Jeans)', 'assets/images/hanni.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Karina (Aespa)', 'assets/images/karina.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Jihyo (Twice)', 'assets/images/jihyo.png'),
-    ],
-    '03 Mei 2025': [
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Jihyo (Twice)', 'assets/images/jihyo.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Wonyoung (IVE)', 'assets/images/wonyoung.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Rosé (BlackPink)', 'assets/images/rose.png'),
-    ],
-  };
-
-  final Map<String, List<_NotifItem>> _transaksiData = {
-    '15 Juli 2025': [
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Hanni (New Jeans)', 'assets/images/hanni.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Karina (Aespa)', 'assets/images/karina.png'),
-    ],
-    '03 Mei 2025': [
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Wonyoung (IVE)', 'assets/images/wonyoung.png'),
-      _NotifItem('Journey Happiness Camp', 'Sunday,27 March 2026', 'Rosé (BlackPink)', 'assets/images/rose.png'),
-    ],
-  };
-
   @override
   Widget build(BuildContext context) {
-    final data = _tabIndex == 0 ? _promoData : _transaksiData;
+    final appState = AppState();
 
     return SafeArea(
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: Column(
-          children: [
-            Text('Notification', style: GoogleFonts.inter(color: AppColors.white, fontSize: 22, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _tabBtn('Promo', 0),
-                  _tabBtn('Daftar Transaksi', 1),
-                ],
-              ),
-            ),
-            const Divider(color: AppColors.border, height: 1),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-                children: data.entries.map((entry) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        body: AnimatedBuilder(
+          animation: appState,
+          builder: (context, _) {
+            // Filter dynamic notifications from AppState
+            final list = appState.notifications;
+            final promoData = list.where((n) => n.type == 'Promo').toList();
+            final transaksiData = list.where((n) => n.type == 'Transaksi').toList();
+
+            final currentList = _tabIndex == 0 ? promoData : transaksiData;
+
+            return Column(
+              children: [
+                const SizedBox(height: 12),
+                Text('Notifikasi', style: GoogleFonts.inter(color: AppColors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 16),
+
+                // Tab selection
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
                     children: [
-                      Text(entry.key, style: GoogleFonts.inter(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 10),
-                      ...entry.value.map((item) => Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(14)),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(item.imagePath, width: 56, height: 56, fit: BoxFit.cover),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
+                      _tabBtn('Promo (${promoData.length})', 0),
+                      _tabBtn('Daftar Transaksi (${transaksiData.length})', 1),
+                    ],
+                  ),
+                ),
+                const Divider(color: AppColors.border, height: 1),
+
+                // Notifications ListView
+                Expanded(
+                  child: currentList.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                          itemCount: currentList.length,
+                          itemBuilder: (context, index) {
+                            final item = currentList[index];
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.card,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item.title, style: GoogleFonts.inter(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                                  Text(item.date, style: GoogleFonts.inter(color: AppColors.muted, fontSize: 12)),
-                                  Text(item.artist, style: GoogleFonts.inter(color: AppColors.muted, fontSize: 12)),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(item.imagePath, width: 56, height: 56, fit: BoxFit.cover),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: GoogleFonts.inter(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          item.message,
+                                          style: GoogleFonts.inter(color: AppColors.muted, fontSize: 12, height: 1.4),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              item.date,
+                                              style: GoogleFonts.inter(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w600),
+                                            ),
+                                            Text(
+                                              item.artist,
+                                              style: GoogleFonts.inter(color: AppColors.muted, fontSize: 10),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  
+                                  // Action button - let's navigate to detail page for booking!
+                                  if (item.type == 'Promo')
+                                    GestureDetector(
+                                      onTap: () {
+                                        // Dynamic mapping: Try to find event with matching artist name
+                                        try {
+                                          final matchedEvent = allEvents.firstWhere(
+                                            (e) => e.artist.toLowerCase().contains(item.artist.split(' ')[0].toLowerCase()),
+                                          );
+                                          context.push('/event/${matchedEvent.id}');
+                                        } catch (_) {
+                                          context.push('/event/1'); // Fallback
+                                        }
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(
+                                          'Beli',
+                                          style: GoogleFonts.inter(color: AppColors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                              child: Text('Buy', style: GoogleFonts.inter(color: AppColors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      )),
-                      const SizedBox(height: 10),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -125,8 +158,42 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: isActive ? AppColors.primary : Colors.transparent, width: 2)),
           ),
-          child: Text(label, textAlign: TextAlign.center,
-            style: GoogleFonts.inter(color: isActive ? AppColors.primary : AppColors.muted, fontSize: 15, fontWeight: isActive ? FontWeight.w600 : FontWeight.w500)),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: isActive ? AppColors.primary : AppColors.muted,
+              fontSize: 14,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.notifications_off_outlined, size: 64, color: AppColors.muted.withValues(alpha: 0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'Belum Ada Notifikasi',
+              style: GoogleFonts.inter(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _tabIndex == 0
+                  ? 'Info diskon tiket dan promo menarik akan dikabarkan di sini.'
+                  : 'Riwayat transaksi pembelian tiket Anda akan dicatat di sini.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: AppColors.muted, fontSize: 13),
+            ),
+          ],
         ),
       ),
     );
